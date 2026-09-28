@@ -1,6 +1,6 @@
 # ShresthApp
 
-A React Native (Expo) mobile application for cold-chain shipment tracking and supply-chain traceability. ShresthApp lets administrators monitor devices and shipments, lets users track their own consignments, and lets anyone publicly verify batch integrity with a batch code or QR scan.
+A React Native (Expo) mobile application for cold-chain shipment tracking and supply-chain traceability. ShresthApp supports admin, user, and public verification workflows for batches, shipments, device monitoring, and integrity checks. Administrators monitor devices and shipments, users track their consignments, and anyone can verify batch integrity with a batch code or QR scan.
 
 ## Features
 
