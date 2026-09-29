@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>SHRESTH — Full System Pipeline</title>
+<style>
+:root{box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);
+--bg:#0b1220;--panel:#121a2b;--panel2:#0d1528;--border:#24304a;--text:#e7ecf5;--dim:#8b96ad;--accent:#3b82f6;--glow:#60a5fa;--green:#22c55e;--red:#ef4444;--fill:#16213a;--stroke:#35415e}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;display:flex;flex-direction:column;align-items:center;padding:24px 16px calc(24px + env(safe-area-inset-bottom,0px))}
+.wrap{width:100%;max-width:1000px}
+h1{font-size:1.15rem;margin:0 0 4px;text-align:center}
+.sub{color:var(--dim);font-size:.85rem;margin:0 0 18px;text-align:center}
+.card{background:var(--panel);border:1px solid var(--border);border-radius:14px;padding:8px;overflow-x:auto}
+svg{width:100%;height:auto;display:block;min-width:640px}
+.rect{fill:var(--fill);stroke:var(--stroke);stroke-width:2;transition:all .35s}
+.lab{fill:var(--text);font-size:15px;font-weight:700}
+.sm{fill:var(--dim);font-size:10.5px}
+.lane{fill:var(--dim);font-size:11px}
+.box.active .rect{stroke:var(--glow);filter:drop-shadow(0 0 8px rgba(96,165,250,.65))}
+.box.success .rect{stroke:var(--green);filter:drop-shadow(0 0 8px rgba(34,197,94,.6))}
+.box.danger .rect{stroke:var(--red);filter:drop-shadow(0 0 10px rgba(239,68,68,.7))}
+.encl{fill:none;stroke:var(--stroke);stroke-width:1.5;stroke-dasharray:6 6;transition:all .35s}
+.encl.danger{stroke:var(--red);filter:drop-shadow(0 0 8px rgba(239,68,68,.6))}
+.wire{stroke:var(--stroke);stroke-width:2;fill:none;transition:stroke .4s}
+.wire.dash{stroke-dasharray:5 5}
+.wire.done{stroke:var(--accent)}
+.wire.bad{stroke:var(--red)}
+#pk{opacity:0}
+.status{margin-top:14px;background:var(--panel);border:1px solid var(--border);border-radius:10px;padding:10px 16px;font-size:.88rem;text-align:center}
+.term{margin-top:12px;background:var(--panel2);border:1px solid var(--border);border-radius:10px;padding:14px 16px;height:190px;overflow-y:auto;font-family:"SF Mono",Menlo,Consolas,monospace;font-size:.8rem;line-height:1.55}
+.ln{opacity:0;animation:fi .3s forwards;white-space:pre-wrap}
+.ln.ok{color:var(--green)}.ln.err{color:var(--red)}.ln.dim{color:var(--dim)}
+@keyframes fi{to{opacity:1}}
+.ctl{display:flex;gap:10px;margin-top:14px;flex-wrap:wrap;justify-content:center;align-items:center}
+.grp{display:flex;align-items:center;gap:6px;font-size:.8rem;color:var(--dim)}
+button{appearance:none;border:1px solid var(--border);background:var(--panel);color:var(--text);padding:10px 16px;border-radius:9px;font-size:.86rem;font-weight:600;cursor:pointer;transition:all .15s}
+button:hover:not(:disabled){border-color:var(--glow)}
+button:disabled{opacity:.35;cursor:not-allowed}
+button:focus-visible{outline:2px solid var(--glow);outline-offset:2px}
+button.pri{background:var(--accent);border-color:var(--accent);color:#fff}
+button.pri:hover:not(:disabled){background:#2563eb}
+button.dng{background:transparent;border-color:var(--red);color:var(--red)}
+button.dng:hover:not(:disabled){background:rgba(239,68,68,.12)}
+button.seg{padding:7px 12px;font-size:.78rem}
+button.seg.on{border-color:var(--glow);color:var(--glow)}
+@media (prefers-reduced-motion:reduce){.ln{animation:none;opacity:1}.rect,.wire,.encl{transition:none}}
+</style>
+</head>
+<body>
+<div class="wrap">
+<h1>🔒 SHRESTH — Full System Pipeline</h1>
+<p class="sub">Sensor → secure chip → offline chain → backend → ledger → custody → QR. Press “Next Step” to walk through it live.</p>
+<div class="card">
+<svg viewBox="0 0 900 552" xmlns="http://www.w3.org/2000/svg" id="svg">
+<defs><marker id="ar" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto"><path d="M0,0L6,3L0,6Z" fill="#35415e"/></marker></defs>
+<rect class="encl" id="encl" x="12" y="26" width="876" height="116" rx="14"/>
+<text class="lane" x="26" y="43">On the device · epoxy-potted, tamper-armed</text>
+<text class="lane" x="30" y="211">Network &amp; backend</text>
+<text class="lane" x="30" y="391">Custody &amp; verification</text>
+<g id="wires"></g><g id="boxes"></g>
+<g class="box" id="pow"><rect class="rect" x="30" y="500" width="840" height="38" rx="10"/>
+<text class="lab" x="450" y="516" text-anchor="middle" style="font-size:13px">POWER SUPPLY</text>
+<text class="sm" x="450" y="531" text-anchor="middle">solar + battery · deep-sleep duty cycling</text></g>
+<circle id="pk" r="7" cx="0" cy="0" fill="#3b82f6"/>
+</svg>
+</div>
+<div class="status" id="status">Choose a network condition, then press <strong>Next Step</strong>.</div>
+<div class="term" id="term" aria-live="polite"></div>
+<div class="ctl">
+<button class="pri" id="next">▶ Next Step</button>
+<button id="play">⏵ Auto-play</button>
+<button id="reset">↺ Reset</button>
+<span class="grp">Network:
+<button class="seg on" data-m="full">Full</button><button class="seg" data-m="off">Offline</button></span>
+</div>
+<div class="ctl">
+<button class="dng" id="t1" disabled>⚠ Alter Record</button>
+<button class="dng" id="t2" disabled>⚠ Breach Case</button>
+</div>
+</div>
+<script>
+const $=id=>document.getElementById(id), NS='http://www.w3.org/2000/svg';
+const B={sens:[0,0,'SENSORS','SHT40 · C₂H₄ · MPU6050'],esp:[1,0,'ESP32','reads · stamps · hashes'],chip:[2,0,'ATECC608','signs · key never leaves'],store:[3,0,'LOCAL CHAIN','AES-128 · hash-linked'],
+tamper:[0,1,'TAMPER GUARD','loop-trace · key zeroize'],net:[1,1,'NETWORK','offline · MQTT/TLS'],back:[2,1,'BACKEND','verifies hash + signature'],led:[3,1,'BLOCKCHAIN','Polygon PoS + IPFS anchor'],
+bind:[0,2,'BINDING','seal + check-in scan'],sell:[1,2,'SELLER APP','registers + credential'],buy:[2,2,'BUYER APP','verifies custody chain'],dash:[3,2,'DASHBOARD','QR verification']};
+const Y=[56,220,400];
+const W={A:'M180,91H260',B:'M410,91H490',C:'M640,91H720',D:'M795,126V172H335V220',E:'M410,255H490',F:'M640,255H720',G:'M795,290V346H105V400',H:'M180,435H260',I:'M410,435H490',J:'M640,435H720',T:'M105,220V146'};
+const mk=(t,a,p)=>{const e=document.createElementNS(NS,t);for(const k in a)e.setAttribute(k,a[k]);(p||$('svg')).appendChild(e);return e};
+for(const k in W)mk('path',{id:'w'+k,class:'wire'+(k=='T'?' dash':''),d:W[k],'marker-end':'url(#ar)'},$('wires'));
+for(const k in B){const[c,r,l,s]=B[k],x=30+c*230,y=Y[r],g=mk('g',{class:'box',id:k},$('boxes'));
+mk('rect',{class:'rect',x,y,width:150,height:70,rx:10},g);
+mk('text',{class:'lab',x:x+75,y:y+30,'text-anchor':'middle'},g).textContent=l;
+mk('text',{class:'sm',x:x+75,y:y+48,'text-anchor':'middle'},g).textContent=s}
+
+const S=[
+{t:'Sensors send a reading to the ESP32',w:'A',b:['esp','pow'],l:m=>[['[SENSORS] T=4.3°C · RH=91% · C₂H₄=2.1 ppm · MPU6050 steady','dim'],['[ESP32] + GNSS time and location stamp','']]},
+{t:'ESP32 hashes the record and sends the hash to the crypto chip',w:'B',b:['chip','pow'],l:m=>[['[ESP32] SHA-256: 7a3f9c1b8e42d0a1...','dim'],['[ESP32] --> hash to ATECC608 over I2C','dim']]},
+{t:'Crypto chip signs the hash with its internal private key',b:['chip','pow'],l:m=>[['[ATECC608] signing with on-chip private key','' ],['[ATECC608] (key never appears on the bus)','dim']]},
+{t:'Signed record is encrypted and chained into local flash',w:'C',b:['store','pow'],l:m=>[['[ATECC608] --> signature e29d4a7f9b31...','dim'],['[FLASH] AES-128 encrypt · prev_hash linked · block #128 appended',''],['[POWER] device returns to deep-sleep','dim']]},
+{t:'Network check: is a link available?',w:'D',b:['net'],l:m=>m=='full'?[['[NET] link OK (NB-IoT) → full sync over MQTT/TLS','']]:[['[NET] no network → records stay in chained flash','dim'],['[NET] ...vehicle drives on... coverage regained, flushing queue','']]},
+{t:'Delivery to the backend',w:'E',b:['back'],l:m=>[[m=='full'?'[MQTT/TLS] batch delivered · 18 records':'[MQTT/TLS] queued batch delivered late, nothing lost','dim'],['[BACKEND] hash recomputed ✓ · signature matches device registry ✓','ok']]},
+{t:'Verified records are stored and anchored on the blockchain',w:'F',b:['led'],l:m=>[['[IPFS] encrypted payload stored · CID bafy...9xq','dim'],['[POLYGON] hash + CID anchored: append-only, tamper-evident ✓','ok']]},
+{t:'Device is bound to the shipment',w:'G',b:['bind'],l:m=>[['[BIND] one-time seal + check-in scan: device ID ↔ shipment SH-2041',''],['[MPU6050] detach / move alerts armed','dim']]},
+{t:'Seller registers the shipment and issues a credential',w:'H',b:['sell'],l:m=>[['[SELLER APP] shipment registered · device bound',''],['[SELLER APP] seller credential issued','dim']]},
+{t:'Buyer receives the credential and verifies custody',w:'I',b:['buy'],l:m=>[['[BUYER APP] credential received','dim'],['[BUYER APP] full custody chain verified on delivery ✓','ok']]},
+{t:'Dashboard and QR expose the signed history',w:'J',b:['dash'],l:m=>[['[DASHBOARD] live tracking + signed farm-to-fork history',''],['[QR] batch code scannable by exporter, regulator, buyer ✓','ok']]}
+];
+const N=S.length;let step=0,busy=false,mode='full',timer=null,t1=false,t2=false;
+const pk=$('pk'),term=$('term');
+const cl=(c,ids)=>document.querySelectorAll(ids||'.box').forEach(e=>e.classList.remove(c));
+function lg(x,c,d){setTimeout(()=>{const e=document.createElement('div');e.className='ln'+(c?' '+c:'');e.textContent=x;term.appendChild(e);term.scrollTop=term.scrollHeight},d||0)}
+function move(id,col,dur,cb){const p=$(id),L=p.getTotalLength(),t0=performance.now();pk.setAttribute('fill',col);pk.style.opacity=1;
+(function f(n){const t=Math.min((n-t0)/dur,1),e=t<.5?2*t*t:-1+(4-2*t)*t,q=p.getPointAtLength(L*e);pk.setAttribute('cx',q.x);pk.setAttribute('cy',q.y);
+t<1?requestAnimationFrame(f):setTimeout(()=>{pk.style.opacity=0;cb&&cb()},120)})(t0)}
+function apply(s){cl('active');s.b.forEach(i=>$(i).classList.add('active'));s.l(mode).forEach((l,i)=>lg(l[0],l[1],i*350))}
+function next(){if(busy||step>=N)return;busy=true;const s=S[step];step++;
+$('status').textContent='Step '+step+'/'+N+' · '+s.t;setMode(false);
+const fin=()=>{apply(s);busy=false;if(step==N)done()};
+s.w?move('w'+s.w,'#3b82f6',step==5||step==8?1100:800,()=>{$('w'+s.w).classList.add('done');fin()}):fin()}
+function done(){stop();$('next').disabled=true;$('play').disabled=true;setTimeout(()=>{$('dash').classList.add('success');$('t1').disabled=t1;$('t2').disabled=t2;
+$('status').textContent='Pipeline complete: reading signed, chained, verified, anchored, and viewable by QR.'},900)}
+function stop(){clearInterval(timer);timer=null;$('play').textContent='⏵ Auto-play'}
+function setMode(en){document.querySelectorAll('.seg').forEach(b=>b.disabled=!en)}
+document.querySelectorAll('.seg').forEach(b=>b.onclick=()=>{mode=b.dataset.m;document.querySelectorAll('.seg').forEach(x=>x.classList.toggle('on',x==b))});
+$('next').onclick=next;
+$('play').onclick=()=>{if(timer)return stop();$('play').textContent='⏸ Pause';next();timer=setInterval(()=>{if(!busy)next()},1700)};
+$('reset').onclick=()=>{stop();step=0;busy=false;t1=t2=false;term.innerHTML='';['active','success','danger'].forEach(c=>cl(c));
+cl('danger','#encl');cl('done','.wire');cl('bad','.wire');pk.style.opacity=0;$('next').disabled=false;$('play').disabled=false;$('t1').disabled=$('t2').disabled=true;setMode(true);
+$('status').innerHTML='Choose a network condition, then press <strong>Next Step</strong>.'};
+$('t1').onclick=()=>{t1=true;$('t1').disabled=true;lg('','',0);lg('--- TEST: ALTER RECORD ---','err',100);lg('[ATTACKER] record edited in transit (T=4.3°C → T=9.3°C)','dim',500);
+$('wE').classList.add('bad');move('wE','#ef4444',700);
+setTimeout(()=>{cl('active');cl('success');$('back').classList.add('danger');lg('[BACKEND] hash mismatch, signature invalid → record REJECTED','err',0);
+lg('[BLOCKCHAIN] nothing anchored; on-chain history unchanged ✓','ok',350);$('status').textContent='Tampering detected: the signature no longer matches the altered data.'},1200)};
+$('t2').onclick=()=>{t2=true;$('t2').disabled=true;lg('','',0);lg('--- TEST: BREACH CASE ---','err',100);$('wT').classList.add('bad');
+$('encl').classList.add('danger');$('tamper').classList.add('danger');
+lg('[TAMPER] epoxy loop-trace broken','err',400);lg('[SUPERCAP] powering instant key zeroization...','dim',750);
+setTimeout(()=>{$('chip').classList.add('danger');lg('[ATECC608] private key wiped: device can no longer sign','err',0);
+lg('[BACKEND] device flagged compromised; future records rejected ✓','ok',350);$('status').textContent='Breach detected: key destroyed, the device is locked out of the network.'},1100)};
+setMode(true);
+</script>
+</body>
+</html>
