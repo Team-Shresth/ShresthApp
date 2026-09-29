@@ -81,6 +81,7 @@ export default function ShipmentDetailScreen() {
   const avgTemp = temps.length ? (temps.reduce((sum: number, value: number) => sum + value, 0) / temps.length).toFixed(1) : '—';
   const maxEthylene = ethylene.length ? Math.max(...ethylene).toFixed(0) : '—';
   const chainState = verification?.isTampered ? 'Tamper detected' : 'Chain verified';
+  const isDelivered = shipment.status === 'verified_delivered';
 
   return (
     <Screen scroll padded>
@@ -171,17 +172,23 @@ export default function ShipmentDetailScreen() {
       <View style={styles.section}>
         <Text style={styles.sectionTitle}>Impact Assessment</Text>
         <View style={styles.impactCard}>
-          <Text style={styles.impactLabel}>Fuel Saved vs. Cargo Value at Risk</Text>
+          <Text style={styles.impactLabel}>
+            {isDelivered ? 'Fuel Saved' : 'Fuel Saved vs. Cargo Value at Risk'}
+          </Text>
           <View style={styles.impactRow}>
             <View style={styles.impactItem}>
               <Text style={styles.impactValue}>120 L</Text>
               <Text style={styles.impactSub}>Fuel saved</Text>
             </View>
-            <View style={styles.impactDivider} />
-            <View style={styles.impactItem}>
-              <Text style={styles.impactValue}>₹{shipment.total_value?.toLocaleString()}</Text>
-              <Text style={styles.impactSub}>Value at risk</Text>
-            </View>
+            {!isDelivered && (
+              <>
+                <View style={styles.impactDivider} />
+                <View style={styles.impactItem}>
+                  <Text style={styles.impactValue}>₹{shipment.total_value?.toLocaleString()}</Text>
+                  <Text style={styles.impactSub}>Value at risk</Text>
+                </View>
+              </>
+            )}
           </View>
         </View>
       </View>
