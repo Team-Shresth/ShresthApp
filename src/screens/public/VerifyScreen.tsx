@@ -32,11 +32,6 @@ export default function PublicVerifyScreen() {
 
   React.useEffect(() => {
     (async () => {
-      if (Platform.OS === 'web') {
-        setHasCamera(false);
-        setCameraPermission(true);
-        return;
-      }
       const { status } = await Camera.requestCameraPermissionsAsync();
       setCameraPermission(status === 'granted');
     })();
