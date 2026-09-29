@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { View, Text, StyleSheet, Alert, Platform, ActivityIndicator } from 'react-native';
-import { Camera } from 'expo-camera';
+import { Camera, CameraView, type BarcodeScanningResult } from 'expo-camera';
 import { useAuth } from '../../context/AuthContext';
 import { useVerifyShipment } from '../../hooks/useVerifyShipment';
 import { journeyStages } from '../../constants/theme';
@@ -28,6 +28,7 @@ export default function PublicVerifyScreen() {
   const [result, setResult] = useState<{ type: ResultType; message: string; data?: any } | null>(null);
   const [cameraPermission, setCameraPermission] = useState<boolean | null>(null);
   const [hasCamera, setHasCamera] = useState(true);
+  const [scanning, setScanning] = useState(false);
 
   React.useEffect(() => {
     (async () => {
@@ -42,11 +43,29 @@ export default function PublicVerifyScreen() {
   }, []);
 
   const handleScanPress = async () => {
+    if (!hasCamera) {
+      Alert.alert('Camera unavailable', 'Use the batch ID field to verify this QR code in the web preview.');
+      return;
+    }
     if (cameraPermission !== true) {
       Alert.alert('Camera permission needed', 'Please grant camera access to scan QR codes');
       return;
     }
-    Alert.alert('QR Scanner', 'Enter the batch ID in the text field below, or use a development build with camera scanning enabled.');
+    setScanning(true);
+  };
+
+  const handleBarcodeScanned = async ({ data }: BarcodeScanningResult) => {
+    if (!scanning || !data) return;
+    const scannedBatchId = extractBatchId(data);
+    if (!scannedBatchId) {
+      setScanning(false);
+      Alert.alert('Unsupported QR code', 'This QR code does not contain a Shresth batch ID.');
+      return;
+    }
+    setScanning(false);
+    setBatchId(scannedBatchId);
+    const res = await verify(scannedBatchId);
+    setResult(res);
   };
 
   const handleInputSubmit = async () => {
@@ -61,6 +80,24 @@ export default function PublicVerifyScreen() {
   };
 
   const meta = result ? RESULT_META[result.type] : null;
+
+  if (scanning) {
+    return (
+      <Screen padded>
+        <ScreenHeader title="Scan Batch QR" subtitle="Center the shipment QR code inside the frame" />
+        <View style={styles.cameraCard}>
+          <CameraView
+            style={styles.camera}
+            facing="back"
+            barcodeScannerSettings={{ barcodeTypes: ['qr'] }}
+            onBarcodeScanned={handleBarcodeScanned}
+          />
+          <View style={styles.scanFrame} />
+        </View>
+        <Button title="Cancel scan" variant="secondary" onPress={() => setScanning(false)} style={styles.cancelScan} />
+      </Screen>
+    );
+  }
 
   return (
     <Screen avoidKeyboard padded>
@@ -203,6 +240,21 @@ export default function PublicVerifyScreen() {
   );
 }
 
+function extractBatchId(data: string): string | null {
+  const value = data.trim();
+  if (/^BB-\d+$/i.test(value)) return value.toUpperCase();
+
+  try {
+    const url = new URL(value);
+    const fromQuery = url.searchParams.get('batch') || url.searchParams.get('batchId');
+    const fromPath = url.pathname.match(/BB-\d+/i)?.[0];
+    const batchId = fromQuery || fromPath;
+    return batchId && /^BB-\d+$/i.test(batchId) ? batchId.toUpperCase() : null;
+  } catch {
+    return null;
+  }
+}
+
 const styles = StyleSheet.create({
   formCard: {
     backgroundColor: theme.colors.surface,
@@ -223,6 +275,25 @@ const styles = StyleSheet.create({
     paddingVertical: theme.spacing.section,
   },
   loadingText: { fontSize: 14, color: theme.colors.secondaryText },
+  cameraCard: {
+    height: 420,
+    overflow: 'hidden',
+    borderRadius: theme.radius.lg,
+    backgroundColor: '#161813',
+    ...theme.shadow.card,
+  },
+  camera: { flex: 1 },
+  scanFrame: {
+    position: 'absolute',
+    width: 220,
+    height: 220,
+    alignSelf: 'center',
+    top: 100,
+    borderWidth: 2,
+    borderColor: theme.colors.green,
+    borderRadius: theme.radius.md,
+  },
+  cancelScan: { marginTop: theme.spacing.gap },
   resultCard: {
     borderRadius: theme.radius.lg,
     borderWidth: 1,
