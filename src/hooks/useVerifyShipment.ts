@@ -1,7 +1,7 @@
 import { useState, useCallback } from 'react';
 import { getShipmentByBatchId, getReadingsByBatchId } from '../db/database';
 import { verifyChain } from '../utils/hashChain';
-import type { CoreReadingFields, Shipment, VerifyResult } from '../types';
+import type { CoreReadingFields, VerifyResult } from '../types';
 
 export type { VerifyResult };
 
@@ -36,7 +36,15 @@ export function useVerifyShipment() {
         return {
           type: 'tampered',
           message: `Tamper detected at reading ${result.tamperReadingIndex}`,
-          data: { validCount: result.validCount, totalCount: readings.length, expectedHash: result.expectedHash, storedHash: result.storedHash, tamperReadingIndex: result.tamperReadingIndex },
+          data: {
+            validCount: result.validCount,
+            totalCount: readings.length,
+            expectedHash: result.expectedHash,
+            storedHash: result.storedHash,
+            tamperReadingIndex: result.tamperReadingIndex ?? undefined,
+            tamperedReading: readings.find((reading) => reading.reading_index === result.tamperReadingIndex),
+            shipment,
+          },
         };
       }
 

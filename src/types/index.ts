@@ -90,6 +90,8 @@ export interface VerifyResult {
     expectedHash?: string;
     storedHash?: string;
     tamperReadingIndex?: number;
+    tamperedReading?: Reading;
+    shipment?: Shipment;
     tempDrift?: number;
     ethyleneDrift?: number;
   };

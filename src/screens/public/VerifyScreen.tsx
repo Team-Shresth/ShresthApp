@@ -141,6 +141,39 @@ export default function PublicVerifyScreen() {
                   </View>
                 </>
               )}
+              {result.type === 'tampered' && result.data.tamperedReading && result.data.shipment && (
+                <View style={styles.tamperDetails}>
+                  <Text style={styles.tamperTitle}>Tamper details</Text>
+                  <View style={styles.dataRow}>
+                    <Text style={styles.dataKey}>Shipment</Text>
+                    <Text style={styles.dataValue}>{result.data.shipment.product_name}</Text>
+                  </View>
+                  <View style={styles.dataRow}>
+                    <Text style={styles.dataKey}>Detected at</Text>
+                    <Text style={styles.dataValue}>{new Date(result.data.tamperedReading.timestamp).toLocaleString()}</Text>
+                  </View>
+                  <View style={styles.dataRow}>
+                    <Text style={styles.dataKey}>Location</Text>
+                    <Text style={styles.dataValue}>{result.data.tamperedReading.gps_lat.toFixed(5)}, {result.data.tamperedReading.gps_lon.toFixed(5)}</Text>
+                  </View>
+                  <View style={styles.dataRow}>
+                    <Text style={styles.dataKey}>Device</Text>
+                    <Text style={styles.dataValue}>{result.data.tamperedReading.device_id}</Text>
+                  </View>
+                  <View style={styles.dataRow}>
+                    <Text style={styles.dataKey}>Reading values</Text>
+                    <Text style={styles.dataValue}>{result.data.tamperedReading.temperature_c.toFixed(1)}°C · {result.data.tamperedReading.humidity_pct.toFixed(1)}% RH · {result.data.tamperedReading.ethylene_ppm.toFixed(1)} ppm</Text>
+                  </View>
+                  <View style={styles.dataRow}>
+                    <Text style={styles.dataKey}>Previous hash</Text>
+                    <Text style={styles.dataValue}>{result.data.tamperedReading.prev_hash.slice(0, 16)}…</Text>
+                  </View>
+                  <View style={styles.dataRow}>
+                    <Text style={styles.dataKey}>Reading hash</Text>
+                    <Text style={styles.dataValue}>{result.data.tamperedReading.hash.slice(0, 16)}…</Text>
+                  </View>
+                </View>
+              )}
             </View>
           )}
         </View>
@@ -212,6 +245,8 @@ const styles = StyleSheet.create({
   dataRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: 4 },
   dataKey: { fontSize: 12, color: theme.colors.secondaryText },
   dataValue: { fontSize: 12, color: theme.colors.text, fontFamily: theme.fonts.mono },
+  tamperDetails: { borderTopWidth: 1, borderTopColor: theme.colors.border, marginTop: theme.spacing.sm, paddingTop: theme.spacing.sm },
+  tamperTitle: { fontSize: 12, fontWeight: '700', color: theme.colors.red, textTransform: 'uppercase', letterSpacing: 0.4, marginBottom: theme.spacing.xs },
   qrSection: {
     marginTop: theme.spacing.section,
     padding: theme.spacing.md,
