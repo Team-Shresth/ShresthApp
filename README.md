@@ -8,7 +8,9 @@ A React Native (Expo) mobile application for cold-chain shipment tracking and su
 - **Shipment tracking** — detail screens with journey timeline and temperature/ethylene charts
 - **Public verification** — verify batch integrity via batch code or QR scan
 - **Hash-chain integrity** — cryptographic verification of reading chains using `expo-crypto`
-- **QR code generation** — stable QR payloads generated from batch IDs
+- **QR verification links** — shipment QR codes open the public verification page and load the batch automatically
+- **Tamper details** — show the affected reading, timestamp, GPS coordinates, device, sensor values, and hash comparison
+- **Account controls** — user/admin profile menu with role details, settings entry, sign out, and light/dark mode
 - **Local data layer** — SQLite database seeded with demo data via `expo-sqlite`
 - **Role-based flows** — administrator, shipment user, and public verification roles
 
@@ -65,7 +67,36 @@ npx expo start
 
 Then scan the QR code in the terminal with the Expo Go app, or press `a` / `i` to launch on an emulator/simulator.
 
-> **Note:** This is a native mobile app, not a static website. Web preview is not the primary approach because the project uses SQLite and native mobile dependencies that do not work reliably in browser mode.
+### Web preview
+
+Build and serve the web export locally:
+
+```powershell
+npm run build:web
+npx serve dist
+```
+
+The live web demo is available at [https://shresth-app.vercel.app](https://shresth-app.vercel.app).
+
+### Demo accounts
+
+- Shipment user: `priya@freshmart.in`
+- Administrator: `rohan@shresth.gov.in`
+- Demo password: any value
+
+Both accounts use a generated six-digit demo OTP shown on the verification screen.
+
+### QR verification
+
+QR codes generated for batches encode a public URL such as:
+
+```text
+https://shresth-app.vercel.app/?batch=BB-2375
+```
+
+Scanning a newly generated QR with Google Lens opens the public verification page and displays the shipment result. For tampered shipments, the result includes the tamper reading number, date/time, GPS location, device ID, sensor values, valid reading count, and expected/stored/previous/reading hashes.
+
+> **Note:** The demo currently uses a local seeded SQLite database. It is suitable for demonstrations, but data is not shared between users or devices. A production deployment needs a shared backend database and authentication service.
 
 ## Key Files
 
@@ -85,13 +116,6 @@ The project is configured for [Expo EAS](https://expo.dev/eas) production builds
 - **production** — Play Store / App Store distribution with auto-incremented build numbers
 
 See [`DEPLOYMENT_CHECKLIST.md`](DEPLOYMENT_CHECKLIST.md) for the full release checklist.
-
-### 🌐 Live Demo
-The app is live at: [https://shresth-app.vercel.app](https://shresth-app.vercel.app)
-
-### 🌐 Live Demo 
-The live web version of the app is available at: [https://shresth-app.vercel.app](https://shresth-app.vercel.app)
-
 
 ## License
 
