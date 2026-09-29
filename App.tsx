@@ -6,6 +6,7 @@ import { AuthProvider, useAuth } from './src/context/AuthContext';
 import { initDatabase, seedDatabase, isDatabaseEmpty } from './src/db/database';
 import MainStack from './src/navigation/MainStack';
 import AuthStack from './src/navigation/AuthStack';
+import PublicVerifyScreen from './src/screens/public/VerifyScreen';
 import { theme } from './src/constants/theme';
 
 export default function App() {
@@ -22,6 +23,9 @@ function AppInner() {
   const { isAuthenticated, user } = useAuth();
   const [authReady, setAuthReady] = useState(false);
   const [databaseError, setDatabaseError] = useState<string | null>(null);
+  const publicBatchId = Platform.OS === 'web' && typeof window !== 'undefined'
+    ? new URLSearchParams(window.location.search).get('batch')?.toUpperCase()
+    : undefined;
 
   useEffect(() => {
     let active = true;
@@ -99,7 +103,9 @@ function AppInner() {
   return (
     <>
       <StatusBar style="dark" />
-      {isAuthenticated ? (
+      {publicBatchId ? (
+        <PublicVerifyScreen initialBatchId={publicBatchId} />
+      ) : isAuthenticated ? (
         <MainStack authReady={true} user={user} />
       ) : (
         <AuthStack />

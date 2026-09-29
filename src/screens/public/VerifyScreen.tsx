@@ -21,7 +21,7 @@ const RESULT_META: Record<ResultType, { label: string; color: string; soft: stri
   error: { label: 'Not Found', color: theme.colors.secondaryText, soft: theme.colors.muted },
 };
 
-export default function PublicVerifyScreen() {
+export default function PublicVerifyScreen({ initialBatchId }: { initialBatchId?: string }) {
   const { user } = useAuth();
   const [batchId, setBatchId] = useState('');
   const { verify, verifying } = useVerifyShipment();
@@ -36,6 +36,12 @@ export default function PublicVerifyScreen() {
       setCameraPermission(status === 'granted');
     })();
   }, []);
+
+  React.useEffect(() => {
+    if (!initialBatchId) return;
+    setBatchId(initialBatchId);
+    void verify(initialBatchId).then(setResult);
+  }, [initialBatchId, verify]);
 
   const handleScanPress = async () => {
     if (!hasCamera) {
@@ -143,6 +149,35 @@ export default function PublicVerifyScreen() {
 
           {result.data && (
             <View style={styles.dataBox}>
+              {result.data.shipment && (
+                <View style={styles.shipmentDetails}>
+                  <Text style={styles.tamperTitle}>Shipment details</Text>
+                  <View style={styles.dataRow}>
+                    <Text style={styles.dataKey}>Batch ID</Text>
+                    <Text style={styles.dataValue}>{result.data.shipment.batch_id}</Text>
+                  </View>
+                  <View style={styles.dataRow}>
+                    <Text style={styles.dataKey}>Product</Text>
+                    <Text style={styles.dataValue}>{result.data.shipment.product_name}</Text>
+                  </View>
+                  <View style={styles.dataRow}>
+                    <Text style={styles.dataKey}>Route</Text>
+                    <Text style={styles.dataValue}>{result.data.shipment.origin} → {result.data.shipment.destination}</Text>
+                  </View>
+                  <View style={styles.dataRow}>
+                    <Text style={styles.dataKey}>Farmer</Text>
+                    <Text style={styles.dataValue}>{result.data.shipment.farmer_name}</Text>
+                  </View>
+                  <View style={styles.dataRow}>
+                    <Text style={styles.dataKey}>Status</Text>
+                    <Text style={styles.dataValue}>{result.data.shipment.status.replace(/_/g, ' ')}</Text>
+                  </View>
+                  <View style={styles.dataRow}>
+                    <Text style={styles.dataKey}>Device</Text>
+                    <Text style={styles.dataValue}>{result.data.shipment.device_id}</Text>
+                  </View>
+                </View>
+              )}
               {result.data.validCount != null && (
                 <View style={styles.dataRow}>
                   <Text style={styles.dataKey}>Valid readings</Text>
@@ -312,6 +347,7 @@ const styles = StyleSheet.create({
   dataKey: { fontSize: 12, color: theme.colors.secondaryText },
   dataValue: { fontSize: 12, color: theme.colors.text, fontFamily: theme.fonts.mono },
   tamperDetails: { borderTopWidth: 1, borderTopColor: theme.colors.border, marginTop: theme.spacing.sm, paddingTop: theme.spacing.sm },
+  shipmentDetails: { paddingBottom: theme.spacing.sm, marginBottom: theme.spacing.sm, borderBottomWidth: 1, borderBottomColor: theme.colors.border },
   tamperTitle: { fontSize: 12, fontWeight: '700', color: theme.colors.red, textTransform: 'uppercase', letterSpacing: 0.4, marginBottom: theme.spacing.xs },
   qrSection: {
     marginTop: theme.spacing.section,

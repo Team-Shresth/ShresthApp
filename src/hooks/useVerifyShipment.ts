@@ -53,10 +53,10 @@ export function useVerifyShipment() {
       const tempDrift = Math.max(...temps) - Math.min(...temps);
       const ethyleneDrift = Math.max(...ethylene) - Math.min(...ethylene);
       if (tempDrift > 8 || ethyleneDrift > 15) {
-        return { type: 'live_breach', message: 'Live breach detected: environmental parameters drifted beyond safe thresholds', data: { tempDrift, ethyleneDrift } };
+        return { type: 'live_breach', message: 'Live breach detected: environmental parameters drifted beyond safe thresholds', data: { tempDrift, ethyleneDrift, shipment } };
       }
 
-      return { type: 'verified', message: 'Verified: hash chain intact and environmental parameters within normal ranges', data: { validCount: readings.length, totalCount: readings.length } };
+      return { type: 'verified', message: 'Verified: hash chain intact and environmental parameters within normal ranges', data: { validCount: readings.length, totalCount: readings.length, shipment } };
     } catch (e: any) {
       return { type: 'error', message: e.message || 'Verification failed' };
     } finally {
