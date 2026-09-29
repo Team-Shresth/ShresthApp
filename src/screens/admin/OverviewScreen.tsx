@@ -7,7 +7,7 @@ import { getDevices, getShipments, getUsers } from '../../db/database';
 import Screen from '../../components/Screen';
 import ScreenHeader from '../../components/ScreenHeader';
 import StatCard from '../../components/StatCard';
-import Button from '../../components/Button';
+import AccountMenu from '../../components/AccountMenu';
 import StatusBadge from '../../components/StatusBadge';
 import { theme } from '../../constants/theme';
 import type { Device, RootStackParamList, Shipment, User } from '../../types';
@@ -15,7 +15,7 @@ import type { Device, RootStackParamList, Shipment, User } from '../../types';
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 
 export default function AdminOverviewScreen() {
-  const { logout } = useAuth();
+  const { user, logout } = useAuth();
   const navigation = useNavigation<NavigationProp>();
   const [stats, setStats] = useState<{
     devices: Device[];
@@ -69,7 +69,7 @@ export default function AdminOverviewScreen() {
       <ScreenHeader
         title="Fleet Overview"
         subtitle="Administrator dashboard"
-        right={<Button small variant="secondary" title="Sign Out" onPress={logout} />}
+        right={<AccountMenu user={user} onSignOut={logout} />}
       />
 
       <View style={styles.sectionLabelRow}>

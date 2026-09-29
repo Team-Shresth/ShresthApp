@@ -8,7 +8,7 @@ import ScreenHeader from '../../components/ScreenHeader';
 import StatCard from '../../components/StatCard';
 import EmptyState from '../../components/EmptyState';
 import StatusBadge from '../../components/StatusBadge';
-import Button from '../../components/Button';
+import AccountMenu from '../../components/AccountMenu';
 import { theme } from '../../constants/theme';
 import type { RootStackParamList } from '../../navigation/MainStack';
 
@@ -55,7 +55,7 @@ export default function OverviewScreen() {
       <ScreenHeader
         title="Overview"
         subtitle={`${user?.name ?? 'Your'}'s shipments`}
-        right={<Button small variant="secondary" title="Sign Out" onPress={logout} />}
+        right={<AccountMenu user={user} onSignOut={logout} />}
       />
 
       <View style={styles.statsRow}>

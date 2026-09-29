@@ -2,13 +2,15 @@
 // Shresth design tokens
 // Sage & cream, print-inspired
 // -----------------------------
+const isDarkMode = typeof window !== 'undefined' && window.localStorage?.getItem('shresth-color-mode') === 'dark';
+
 export const theme = {
   colors: {
-    bg: '#FAF7EE',            // warm cream page background
-    surface: '#FFFDF8',       // warm white card surface
-    text: '#2C2A24',          // warm charcoal ink
-    secondaryText: '#7C7666', // warm grey
-    border: '#E8E1CF',        // cream-tinted hairline
+    bg: isDarkMode ? '#171A17' : '#FAF7EE',
+    surface: isDarkMode ? '#232821' : '#FFFDF8',
+    text: isDarkMode ? '#F5F1E7' : '#2C2A24',
+    secondaryText: isDarkMode ? '#B6B9AD' : '#7C7666',
+    border: isDarkMode ? '#3B4439' : '#E8E1CF',
     green: '#4A7C59',         // sage green primary
     amber: '#B07D2B',         // golden amber
     red: '#B23A2E',           // warm brick red
@@ -17,9 +19,9 @@ export const theme = {
     amberSoft: 'rgba(176,125,43,0.12)',
     redSoft: 'rgba(178,58,46,0.10)',
     // neutral tints
-    muted: '#F1EDE0',
-    mutedText: '#A9A493',
-    overlay: 'rgba(44,42,36,0.45)',
+    muted: isDarkMode ? '#2D342D' : '#F1EDE0',
+    mutedText: isDarkMode ? '#8F988C' : '#A9A493',
+    overlay: isDarkMode ? 'rgba(0,0,0,0.62)' : 'rgba(44,42,36,0.45)',
   },
   fonts: {
     // Inter for UI; JetBrains Mono for data
