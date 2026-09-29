@@ -69,8 +69,10 @@ export async function initDatabase(): Promise<void> {
 
 export async function isDatabaseEmpty(): Promise<boolean> {
   const db = await getDb();
-  const result = await db.getFirstAsync<{ cnt: number }>('SELECT COUNT(*) as cnt FROM shipments;');
-  return (result?.cnt ?? 0) === 0;
+  const result = await db.getFirstAsync<{ userCount: number; shipmentCount: number }>(
+    'SELECT (SELECT COUNT(*) FROM users) as userCount, (SELECT COUNT(*) FROM shipments) as shipmentCount;'
+  );
+  return (result?.userCount ?? 0) === 0 || (result?.shipmentCount ?? 0) === 0;
 }
 
 export async function seedDatabase(): Promise<void> {
@@ -85,26 +87,26 @@ export async function seedDatabase(): Promise<void> {
   await db.withTransactionAsync(async () => {
     for (const u of s.users) {
       await db.runAsync(
-        'INSERT INTO users (name, email, role, phone, twofa_enabled) VALUES (?,?,?,?,?);',
+        'INSERT OR IGNORE INTO users (name, email, role, phone, twofa_enabled) VALUES (?,?,?,?,?);',
         [u.name, u.email, u.role, u.phone, u.twofa_enabled]
       );
     }
     for (const d of s.devices) {
       await db.runAsync(
-        'INSERT INTO devices (serial_number, location, battery_pct, storage_pct, last_sync, status) VALUES (?,?,?,?,?,?);',
+        'INSERT OR IGNORE INTO devices (serial_number, location, battery_pct, storage_pct, last_sync, status) VALUES (?,?,?,?,?,?);',
         [d.serial_number, d.location, d.battery_pct, d.storage_pct, d.last_sync, d.status]
       );
     }
     for (const sh of s.shipments) {
       await db.runAsync(
-        'INSERT INTO shipments (batch_id, product_name, origin, destination, device_id, farmer_name, farmer_email, status, created_at, delivered_at, total_value, estimated_co2_kg) VALUES (?,?,?,?,?,?,?,?,?,?,?,?);',
+        'INSERT OR IGNORE INTO shipments (batch_id, product_name, origin, destination, device_id, farmer_name, farmer_email, status, created_at, delivered_at, total_value, estimated_co2_kg) VALUES (?,?,?,?,?,?,?,?,?,?,?,?);',
         [sh.batch_id, sh.product_name, sh.origin, sh.destination, sh.device_id, sh.farmer_name, sh.farmer_email, sh.status, sh.created_at, sh.delivered_at, sh.total_value, sh.estimated_co2_kg]
       );
     }
     for (const batchId of Object.keys(s.readings)) {
       for (const r of s.readings[batchId]) {
         await db.runAsync(
-          'INSERT INTO readings (device_id, batch_id, reading_index, timestamp, temperature_c, humidity_pct, ethylene_ppm, gps_lat, gps_lon, prev_hash, hash) VALUES (?,?,?,?,?,?,?,?,?,?,?);',
+          'INSERT OR IGNORE INTO readings (device_id, batch_id, reading_index, timestamp, temperature_c, humidity_pct, ethylene_ppm, gps_lat, gps_lon, prev_hash, hash) VALUES (?,?,?,?,?,?,?,?,?,?,?);',
           [r.device_id, r.batch_id, r.reading_index, r.timestamp, r.temperature_c, r.humidity_pct, r.ethylene_ppm, r.gps_lat, r.gps_lon, r.prev_hash, r.hash]
         );
       }
