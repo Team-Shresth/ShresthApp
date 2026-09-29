@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { StatusBar } from 'expo-status-bar';
-import { View, Text, StyleSheet, ActivityIndicator } from 'react-native';
+import { View, Text, StyleSheet, ActivityIndicator, Platform } from 'react-native';
 import { NavigationContainer } from '@react-navigation/native';
 import { AuthProvider, useAuth } from './src/context/AuthContext';
 import { initDatabase, seedDatabase, isDatabaseEmpty } from './src/db/database';
@@ -21,22 +21,66 @@ export default function App() {
 function AppInner() {
   const { isAuthenticated, user } = useAuth();
   const [authReady, setAuthReady] = useState(false);
+  const [databaseError, setDatabaseError] = useState<string | null>(null);
 
   useEffect(() => {
-    (async () => {
-      try {
-        await initDatabase();
-        const empty = await isDatabaseEmpty();
-        if (empty) {
-          await seedDatabase();
-        }
-      } catch (e) {
-        console.error('DB init error:', e);
-      } finally {
-        setAuthReady(true);
+    let active = true;
+    let releaseDatabaseLock: (() => void) | undefined;
+
+    const initializeDatabase = async () => {
+      await initDatabase();
+      const empty = await isDatabaseEmpty();
+      if (empty) await seedDatabase();
+      if (active) setAuthReady(true);
+    };
+
+    const handleDatabaseError = (error: unknown) => {
+      console.error('DB init error:', error);
+      if (active) {
+        setDatabaseError('The local database could not be opened. Close other app tabs, then reload.');
       }
-    })();
+    };
+
+    if (Platform.OS === 'web' && typeof navigator !== 'undefined' && 'locks' in navigator) {
+      void navigator.locks.request(
+        'shresthapp-sqlite-database',
+        { ifAvailable: true },
+        async (lock) => {
+          if (!lock) {
+            if (active) {
+              setDatabaseError('ShresthApp is already open in another tab. Close that tab, then reload.');
+            }
+            return;
+          }
+
+          try {
+            await initializeDatabase();
+            await new Promise<void>((resolve) => {
+              releaseDatabaseLock = resolve;
+            });
+          } catch (error) {
+            handleDatabaseError(error);
+          }
+        },
+      ).catch(handleDatabaseError);
+    } else {
+      void initializeDatabase().catch(handleDatabaseError);
+    }
+
+    return () => {
+      active = false;
+      releaseDatabaseLock?.();
+    };
   }, []);
+
+  if (databaseError) {
+    return (
+      <View style={styles.loading}>
+        <Text style={styles.loadingTitle}>Database unavailable</Text>
+        <Text style={styles.loadingSub}>{databaseError}</Text>
+      </View>
+    );
+  }
 
   if (!authReady) {
     return (
