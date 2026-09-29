@@ -1,5 +1,6 @@
-import React, { useState } from 'react';
-import { View, Text, StyleSheet } from 'react-native';
+import React, { useEffect, useState } from 'react';
+import { View, Text, StyleSheet, Alert } from 'react-native';
+import { Camera, CameraView, type BarcodeScanningResult } from 'expo-camera';
 import { useVerifyShipment } from '../../hooks/useVerifyShipment';
 import Screen from '../../components/Screen';
 import ScreenHeader from '../../components/ScreenHeader';
@@ -12,6 +13,12 @@ export default function UserVerifyScreen() {
   const { verify, verifying } = useVerifyShipment();
   const [result, setResult] = useState<{ type: 'verified' | 'tampered' | 'live_breach' | 'error'; message: string; data?: any } | null>(null);
   const [scanned, setScanned] = useState(false);
+  const [scanning, setScanning] = useState(false);
+  const [cameraPermission, setCameraPermission] = useState<boolean | null>(null);
+
+  useEffect(() => {
+    Camera.requestCameraPermissionsAsync().then(({ status }) => setCameraPermission(status === 'granted'));
+  }, []);
 
   const resultMeta = result
     ? result.type === 'verified'
@@ -29,6 +36,46 @@ export default function UserVerifyScreen() {
     setResult(res);
   };
 
+  const handleScanPress = () => {
+    if (cameraPermission !== true) {
+      Alert.alert('Camera permission needed', 'Please grant camera access to scan QR codes');
+      return;
+    }
+    setScanning(true);
+  };
+
+  const handleBarcodeScanned = async ({ data }: BarcodeScanningResult) => {
+    if (!scanning || !data) return;
+    const scannedBatchId = extractBatchId(data);
+    setScanning(false);
+    if (!scannedBatchId) {
+      Alert.alert('Unsupported QR code', 'This QR code does not contain a Shresth batch ID.');
+      return;
+    }
+    setBatchId(scannedBatchId);
+    setScanned(true);
+    const res = await verify(scannedBatchId);
+    setResult(res);
+  };
+
+  if (scanning) {
+    return (
+      <Screen padded>
+        <ScreenHeader title="Scan Batch QR" subtitle="Center the shipment QR code inside the frame" />
+        <View style={styles.cameraCard}>
+          <CameraView
+            style={styles.camera}
+            facing="back"
+            barcodeScannerSettings={{ barcodeTypes: ['qr'] }}
+            onBarcodeScanned={handleBarcodeScanned}
+          />
+          <View style={styles.scanFrame} />
+        </View>
+        <Button title="Cancel scan" variant="secondary" onPress={() => setScanning(false)} style={styles.cancelScan} />
+      </Screen>
+    );
+  }
+
   return (
     <Screen avoidKeyboard padded>
       <ScreenHeader title="Verify Shipment" subtitle="Scan or enter batch ID to verify" />
@@ -44,13 +91,16 @@ export default function UserVerifyScreen() {
           autoCapitalize="characters"
           autoCorrect={false}
         />
-        <Button
-          title="Verify"
-          onPress={handleVerify}
-          loading={verifying}
-          disabled={batchId.trim().length === 0}
-          style={{ marginTop: theme.spacing.sm }}
-        />
+        <View style={styles.btnRow}>
+          <Button
+            title="Verify"
+            onPress={handleVerify}
+            loading={verifying}
+            disabled={batchId.trim().length === 0}
+            style={styles.btnFlex}
+          />
+          <Button title="Scan QR" variant="secondary" onPress={handleScanPress} style={styles.btnFlex} />
+        </View>
       </View>
 
       {scanned && result && resultMeta && (
@@ -121,6 +171,19 @@ export default function UserVerifyScreen() {
   );
 }
 
+function extractBatchId(data: string): string | null {
+  const value = data.trim();
+  if (/^BB-\d+$/i.test(value)) return value.toUpperCase();
+
+  try {
+    const url = new URL(value);
+    const batchId = url.searchParams.get('batch') || url.searchParams.get('batchId') || url.pathname.match(/BB-\d+/i)?.[0];
+    return batchId && /^BB-\d+$/i.test(batchId) ? batchId.toUpperCase() : null;
+  } catch {
+    return null;
+  }
+}
+
 const styles = StyleSheet.create({
   formCard: {
     backgroundColor: theme.colors.surface,
@@ -130,6 +193,8 @@ const styles = StyleSheet.create({
     padding: theme.spacing.md,
     ...theme.shadow.card,
   },
+  btnRow: { flexDirection: 'row', gap: theme.spacing.sm, marginTop: theme.spacing.sm },
+  btnFlex: { flex: 1 },
   resultCard: {
     borderRadius: theme.radius.lg,
     borderWidth: 1,
@@ -165,4 +230,8 @@ const styles = StyleSheet.create({
   dataValue: { fontSize: 12, color: theme.colors.text, fontFamily: theme.fonts.mono, fontWeight: '600' },
   tamperDetails: { borderTopWidth: 1, borderTopColor: theme.colors.border, marginTop: theme.spacing.sm, paddingTop: theme.spacing.sm },
   tamperTitle: { fontSize: 12, fontWeight: '700', color: theme.colors.red, textTransform: 'uppercase', letterSpacing: 0.4, marginBottom: theme.spacing.xs },
+  cameraCard: { height: 420, overflow: 'hidden', borderRadius: theme.radius.lg, backgroundColor: '#161813', ...theme.shadow.card },
+  camera: { flex: 1 },
+  scanFrame: { position: 'absolute', width: 220, height: 220, alignSelf: 'center', top: 100, borderWidth: 2, borderColor: theme.colors.green, borderRadius: theme.radius.md },
+  cancelScan: { marginTop: theme.spacing.gap },
 });
