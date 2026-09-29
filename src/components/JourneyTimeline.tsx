@@ -4,7 +4,7 @@ import { theme } from '../constants/theme';
 
 export interface JourneyStep {
   label: string;
-  status: 'completed' | 'current' | 'pending';
+  status: 'completed' | 'current' | 'warning' | 'alert' | 'pending';
   detail?: string;
 }
 
@@ -19,14 +19,28 @@ export function JourneyTimeline({ steps }: { steps: JourneyStep[] }) {
         const isLast = idx === steps.length - 1;
         const isCompleted = step.status === 'completed';
         const isCurrent = step.status === 'current';
+        const isWarning = step.status === 'warning';
+        const isAlert = step.status === 'alert';
 
         const circleBg = isCompleted
           ? theme.colors.green
+          : isAlert
+            ? theme.colors.redSoft
+            : isWarning
+              ? theme.colors.amberSoft
           : isCurrent
             ? theme.colors.greenSoft
             : theme.colors.muted;
-        const circleBorder = isCompleted || isCurrent ? theme.colors.green : theme.colors.border;
-        const labelColor = isCompleted || isCurrent ? theme.colors.text : theme.colors.mutedText;
+        const circleBorder = isAlert
+          ? theme.colors.red
+          : isWarning
+            ? theme.colors.amber
+            : isCompleted || isCurrent ? theme.colors.green : theme.colors.border;
+        const labelColor = isAlert
+          ? theme.colors.red
+          : isWarning
+            ? theme.colors.amber
+            : isCompleted || isCurrent ? theme.colors.text : theme.colors.mutedText;
 
         return (
           <View key={`${step.label}-${idx}`} style={styles.row}>
@@ -38,7 +52,13 @@ export function JourneyTimeline({ steps }: { steps: JourneyStep[] }) {
                   <View
                     style={[
                       styles.dot,
-                      { backgroundColor: isCurrent ? theme.colors.green : theme.colors.mutedText },
+                        {
+                          backgroundColor: isAlert
+                            ? theme.colors.red
+                            : isWarning
+                              ? theme.colors.amber
+                              : isCurrent ? theme.colors.green : theme.colors.mutedText,
+                        },
                     ]}
                   />
                 )}

@@ -82,6 +82,11 @@ export default function ShipmentDetailScreen() {
   const maxEthylene = ethylene.length ? Math.max(...ethylene).toFixed(0) : '—';
   const chainState = verification?.isTampered ? 'Tamper detected' : 'Chain verified';
   const isDelivered = shipment.status === 'verified_delivered';
+  const isOffline = shipment.status === 'offline_recording';
+  const isLiveBreach = shipment.status === 'live_breach';
+  const timelineStages = isLiveBreach
+    ? [...journeyStages.slice(0, 2), 'Live breach', ...journeyStages.slice(2)]
+    : journeyStages;
 
   return (
     <Screen scroll padded>
@@ -118,13 +123,27 @@ export default function ShipmentDetailScreen() {
       <View style={styles.section}>
         <Text style={styles.sectionTitle}>Journey Timeline</Text>
         <JourneyTimeline
-          steps={journeyStages.map((label, idx) => ({
-            label,
-            status: idx < 2 ? 'completed' :
-                   idx === 2 && verification?.isTampered ? 'current' :
-                   idx === 2 && (!verification?.isTampered) ? 'completed' :
-                   idx > 2 && (!verification?.isTampered) ? 'completed' : 'pending',
-          }))}
+          steps={timelineStages.map((label, idx) => {
+            const incidentStage = idx === 2;
+            const status = isOffline
+              ? idx < 2 ? 'completed' : incidentStage ? 'warning' : 'pending'
+              : isLiveBreach
+                ? idx < 2 ? 'completed' : incidentStage ? 'alert' : 'pending'
+                : idx < 2 ? 'completed'
+                  : idx === 2 && verification?.isTampered ? 'current'
+                    : idx === 2 && !verification?.isTampered ? 'completed'
+                      : idx > 2 && !verification?.isTampered ? 'completed' : 'pending';
+
+            return {
+              label,
+              status,
+              detail: isOffline && incidentStage
+                ? 'Shipment is recording readings offline'
+                : isLiveBreach && incidentStage
+                  ? 'Environmental readings outside safe limits'
+                  : undefined,
+            };
+          })}
         />
       </View>
 

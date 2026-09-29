@@ -1,16 +1,22 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { useAuth } from '../../context/AuthContext';
+import { useNavigation } from '@react-navigation/native';
+import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { getDevices, getShipments, getUsers } from '../../db/database';
 import Screen from '../../components/Screen';
 import ScreenHeader from '../../components/ScreenHeader';
 import StatCard from '../../components/StatCard';
 import Button from '../../components/Button';
+import StatusBadge from '../../components/StatusBadge';
 import { theme } from '../../constants/theme';
-import type { Device, Shipment, User } from '../../types';
+import type { Device, RootStackParamList, Shipment, User } from '../../types';
+
+type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 
 export default function AdminOverviewScreen() {
   const { logout } = useAuth();
+  const navigation = useNavigation<NavigationProp>();
   const [stats, setStats] = useState<{
     devices: Device[];
     shipments: Shipment[];
@@ -53,6 +59,10 @@ export default function AdminOverviewScreen() {
       </Screen>
     );
   }
+
+  const attentionShipments = stats.shipments.filter(
+    (shipment) => shipment.status === 'offline_recording' || shipment.status === 'live_breach'
+  );
 
   return (
     <Screen scroll padded>
@@ -99,6 +109,34 @@ export default function AdminOverviewScreen() {
           <Text style={styles.alertLabel}>Live Breaches</Text>
         </View>
       </View>
+
+      <View style={styles.attentionHeader}>
+        <Text style={styles.sectionLabel}>Shipments needing attention</Text>
+        <Text style={styles.attentionCount}>{attentionShipments.length}</Text>
+      </View>
+
+      {attentionShipments.length === 0 ? (
+        <Text style={styles.emptyNotice}>No offline or live-breach shipments.</Text>
+      ) : (
+        attentionShipments.map((shipment) => (
+          <TouchableOpacity
+            key={shipment.batch_id}
+            style={styles.attentionCard}
+            activeOpacity={0.7}
+            onPress={() => navigation.navigate('ShipmentDetail', { shipment })}
+          >
+            <View style={styles.attentionInfo}>
+              <Text style={styles.attentionBatch}>{shipment.batch_id}</Text>
+              <Text style={styles.attentionProduct}>{shipment.product_name}</Text>
+              <Text style={styles.attentionRoute}>{shipment.origin} → {shipment.destination}</Text>
+            </View>
+            <View style={styles.attentionRight}>
+              <StatusBadge status={shipment.status} />
+              <Text style={styles.chevron}>›</Text>
+            </View>
+          </TouchableOpacity>
+        ))
+      )}
 
       <View style={styles.summaryCard}>
         <Text style={styles.summaryLabel}>Fleet summary</Text>
@@ -148,6 +186,32 @@ const styles = StyleSheet.create({
     color: theme.colors.secondaryText,
     marginTop: theme.spacing.xs,
   },
+  attentionHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginTop: theme.spacing.section,
+    marginBottom: theme.spacing.sm,
+  },
+  attentionCount: { fontSize: 12, color: theme.colors.mutedText, fontFamily: theme.fonts.mono },
+  attentionCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: theme.colors.surface,
+    borderRadius: theme.radius.lg,
+    borderWidth: 1,
+    borderColor: theme.colors.border,
+    padding: theme.spacing.md,
+    marginBottom: theme.spacing.sm,
+    ...theme.shadow.card,
+  },
+  attentionInfo: { flex: 1, minWidth: 0, marginRight: theme.spacing.sm },
+  attentionBatch: { fontSize: 15, fontWeight: '700', color: theme.colors.text, fontFamily: theme.fonts.mono },
+  attentionProduct: { fontSize: 13, color: theme.colors.secondaryText, marginTop: 2 },
+  attentionRoute: { fontSize: 12, color: theme.colors.secondaryText, marginTop: 2 },
+  attentionRight: { flexDirection: 'row', alignItems: 'center', gap: theme.spacing.xs },
+  chevron: { fontSize: 18, color: theme.colors.mutedText, marginTop: -2 },
+  emptyNotice: { fontSize: 13, color: theme.colors.secondaryText, marginBottom: theme.spacing.md },
   summaryCard: {
     backgroundColor: theme.colors.surface,
     borderRadius: theme.radius.lg,
