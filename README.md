@@ -86,8 +86,6 @@ The project is configured for [Expo EAS](https://expo.dev/eas) production builds
 
 See [`DEPLOYMENT_CHECKLIST.md`](DEPLOYMENT_CHECKLIST.md) for the full release checklist.
 
-### 🌐 Live Demo
-The app is live at: [https://shresth-app.vercel.app](https://shresth-app.vercel.app)
 
 ### 🌐 Live Demo 
 The live web version of the app is available at: [https://shresth-app.vercel.app](https://shresth-app.vercel.app)
