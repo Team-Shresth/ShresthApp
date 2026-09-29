@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { View, Text, StyleSheet } from 'react-native';
-import { useRoute } from '@react-navigation/native';
+import { RouteProp, useNavigation, useRoute } from '@react-navigation/native';
+import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { getReadingsByBatchId } from '../../db/database';
 import { verifyChain, CoreReadingFields } from '../../utils/hashChain';
 import { journeyStages } from '../../constants/theme';
@@ -14,13 +15,11 @@ import EmptyState from '../../components/EmptyState';
 import { theme } from '../../constants/theme';
 import type { RootStackParamList, Shipment, Reading, ChainVerification } from '../../types';
 
-interface RouteParams {
-  ShipmentDetail: { shipment: Shipment };
-}
-
 export default function ShipmentDetailScreen() {
-  const route = useRoute<keyof RouteParams & 'ShipmentDetail'>();
-  const { shipment } = route.params as { shipment: Shipment };
+  const route = useRoute<RouteProp<RootStackParamList, 'ShipmentDetail'>>();
+  const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
+  const { shipment } = route.params;
+  const handleBack = () => navigation.goBack();
   const [readings, setReadings] = useState<Reading[]>([]);
   const [loading, setLoading] = useState(true);
   const [verification, setVerification] = useState<ChainVerification | null>(null);
@@ -61,6 +60,7 @@ export default function ShipmentDetailScreen() {
   if (loading) {
     return (
       <Screen scroll padded style={{ justifyContent: 'center' }}>
+        <ScreenHeader title={shipment.batch_id} subtitle={shipment.product_name} onBack={handleBack} />
         <Text style={styles.loadingText}>Loading shipment details…</Text>
       </Screen>
     );
@@ -69,7 +69,7 @@ export default function ShipmentDetailScreen() {
   if (readings.length === 0) {
     return (
       <Screen padded>
-        <ScreenHeader title={shipment.batch_id} subtitle={shipment.product_name} onBack={() => { /* Will be set by navigation */ }} />
+        <ScreenHeader title={shipment.batch_id} subtitle={shipment.product_name} onBack={handleBack} />
         <EmptyState glyph="◌" title="No readings" message="No environmental readings available for this shipment." />
       </Screen>
     );
@@ -87,7 +87,7 @@ export default function ShipmentDetailScreen() {
       <ScreenHeader
         title={shipment.batch_id}
         subtitle={shipment.product_name}
-        onBack={() => { /* Will be set by navigation */ }}
+        onBack={handleBack}
       />
 
       <View style={styles.metaCard}>
