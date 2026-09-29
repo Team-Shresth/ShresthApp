@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { StatusBar } from 'expo-status-bar';
 import { View, Text, StyleSheet, ActivityIndicator, Platform } from 'react-native';
 import { NavigationContainer } from '@react-navigation/native';
+import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { AuthProvider, useAuth } from './src/context/AuthContext';
 import { initDatabase, seedDatabase, isDatabaseEmpty } from './src/db/database';
 import MainStack from './src/navigation/MainStack';
@@ -12,9 +13,11 @@ import { theme } from './src/constants/theme';
 export default function App() {
   return (
     <AuthProvider>
-      <NavigationContainer>
-        <AppInner />
-      </NavigationContainer>
+      <SafeAreaProvider>
+        <NavigationContainer>
+          <AppInner />
+        </NavigationContainer>
+      </SafeAreaProvider>
     </AuthProvider>
   );
 }
